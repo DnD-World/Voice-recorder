@@ -8,6 +8,10 @@ export interface AppSettings {
   language: string;
   googleDocsEnabled: boolean;
   googleDocsId: string;
+  googleDriveEnabled: boolean;
+  googleDriveFolderId: string;
+  emailEnabled: boolean;
+  emailAddress: string;
   autoSaveInterval: number; // seconds
   smartTranscription: boolean;
 }
@@ -38,6 +42,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: 'el-GR',
   googleDocsEnabled: false,
   googleDocsId: '',
+  googleDriveEnabled: false,
+  googleDriveFolderId: '',
+  emailEnabled: false,
+  emailAddress: '',
   autoSaveInterval: 60,
   smartTranscription: false,
 };

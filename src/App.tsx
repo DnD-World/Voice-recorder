@@ -4,6 +4,17 @@ import { loadSettings, saveSettings, generateId, formatDuration } from './utils'
 import { AudioCapture } from './services/audioCapture';
 import { createProvider } from './services/transcription';
 import type { TranscriptionProviderInterface } from './services/transcription';
+import { exportNotes, toMarkdown } from './services/fileExport';
+import { sendViaEmail, generateEmailSubject } from './services/email';
+import { 
+  loadGoogleApi, 
+  initTokenClient, 
+  authenticate as authenticateDrive, 
+  isAuthenticated as isDriveAuthenticated,
+  uploadToDrive,
+  updateDriveFile,
+  signOut as signOutDrive
+} from './services/googleDrive';
 
 type View = 'transcription' | 'settings';
 
@@ -25,6 +36,11 @@ function App() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [copied, setCopied] = useState(false);
   
+  // Google Drive state
+  const [driveConnected, setDriveConnected] = useState(false);
+  const [driveFileId, setDriveFileId] = useState<string | null>(null);
+  const [driveSyncing, setDriveSyncing] = useState(false);
+  
   // Refs
   const audioCaptureRef = useRef<AudioCapture | null>(null);
   const providerRef = useRef<TranscriptionProviderInterface | null>(null);
@@ -32,6 +48,7 @@ function App() {
   const saveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const fullTextRef = useRef('');
+  const driveFileIdRef = useRef<string | null>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -119,9 +136,33 @@ function App() {
         setSessionDuration(prev => prev + 1);
       }, 1000);
 
-      // Start auto-save timer (download-based)
+      // Start auto-save timer
       if (settings.autoSaveInterval > 0) {
         saveTimerRef.current = setInterval(() => {
+          if (driveConnected && fullTextRef.current.trim()) {
+            // Sync to Google Drive
+            const content = toMarkdown(segments, 'Voice Notes');
+            const filename = `voice-notes-${new Date().toISOString().slice(0, 10)}.md`;
+            
+            if (driveFileIdRef.current) {
+              updateDriveFile(driveFileIdRef.current, content).catch(console.error);
+            } else if (settings.googleDriveFolderId) {
+              uploadToDrive(filename, content, 'text/markdown', settings.googleDriveFolderId)
+                .then(fileId => {
+                  driveFileIdRef.current = fileId;
+                  setDriveFileId(fileId);
+                })
+                .catch(console.error);
+            } else {
+              uploadToDrive(filename, content, 'text/markdown')
+                .then(fileId => {
+                  driveFileIdRef.current = fileId;
+                  setDriveFileId(fileId);
+                })
+                .catch(console.error);
+            }
+          }
+          
           setLastSaveTime(Date.now());
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 3000);
@@ -180,17 +221,77 @@ function App() {
     });
   }, [getFullText]);
 
+  const downloadAsMarkdown = useCallback(() => {
+    exportNotes(segments, 'markdown', 'Voice Notes');
+  }, [segments]);
+
   const downloadAsText = useCallback(() => {
-    const text = getFullText();
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const dateStr = new Date().toISOString().slice(0, 10);
-    a.download = `voice-notes-${dateStr}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [getFullText]);
+    exportNotes(segments, 'text');
+  }, [segments]);
+
+  // Google Drive functions
+  const connectGoogleDrive = useCallback(async () => {
+    try {
+      await loadGoogleApi();
+      // You'll need to replace this with your actual Google OAuth Client ID
+      const CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
+      initTokenClient(CLIENT_ID);
+      await authenticateDrive();
+      setDriveConnected(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to connect to Google Drive');
+    }
+  }, []);
+
+  const disconnectGoogleDrive = useCallback(() => {
+    signOutDrive();
+    setDriveConnected(false);
+    setDriveFileId(null);
+    driveFileIdRef.current = null;
+  }, []);
+
+  const syncToDrive = useCallback(async () => {
+    if (!driveConnected || segments.length === 0) return;
+    
+    setDriveSyncing(true);
+    try {
+      const content = toMarkdown(segments, 'Voice Notes');
+      const filename = `voice-notes-${new Date().toISOString().slice(0, 10)}.md`;
+      
+      if (driveFileIdRef.current) {
+        // Update existing file
+        await updateDriveFile(driveFileIdRef.current, content);
+      } else if (settings.googleDriveFolderId) {
+        // Upload to specified folder
+        const fileId = await uploadToDrive(filename, content, 'text/markdown', settings.googleDriveFolderId);
+        driveFileIdRef.current = fileId;
+        setDriveFileId(fileId);
+      } else {
+        // Upload to root
+        const fileId = await uploadToDrive(filename, content, 'text/markdown');
+        driveFileIdRef.current = fileId;
+        setDriveFileId(fileId);
+      }
+      
+      setLastSaveTime(Date.now());
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sync to Google Drive');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } finally {
+      setDriveSyncing(false);
+    }
+  }, [driveConnected, segments, settings.googleDriveFolderId]);
+
+  const emailNotes = useCallback(() => {
+    if (!settings.emailAddress || segments.length === 0) return;
+    
+    const content = toMarkdown(segments, 'Voice Notes');
+    const subject = generateEmailSubject('Voice Notes');
+    sendViaEmail(settings.emailAddress, subject, content, 'markdown');
+  }, [segments, settings.emailAddress]);
 
   const updateSettings = useCallback((updates: Partial<AppSettings>) => {
     setSettings(prev => ({ ...prev, ...updates }));
@@ -211,11 +312,17 @@ function App() {
           copied={copied}
           provider={settings.provider}
           scrollRef={scrollRef}
+          driveConnected={driveConnected}
+          driveSyncing={driveSyncing}
+          settings={settings}
           onStart={startRecording}
           onStop={stopRecording}
           onClear={clearTranscription}
           onCopy={copyToClipboard}
-          onDownload={downloadAsText}
+          onDownloadMd={downloadAsMarkdown}
+          onDownloadTxt={downloadAsText}
+          onEmail={emailNotes}
+          onSyncDrive={syncToDrive}
           onOpenSettings={() => setView('settings')}
         />
       ) : (
@@ -243,11 +350,17 @@ interface TranscriptionViewProps {
   copied: boolean;
   provider: TranscriptionProvider;
   scrollRef: React.RefObject<HTMLDivElement>;
+  driveConnected: boolean;
+  driveSyncing: boolean;
+  settings: AppSettings;
   onStart: () => void;
   onStop: () => void;
   onClear: () => void;
   onCopy: () => void;
-  onDownload: () => void;
+  onDownloadMd: () => void;
+  onDownloadTxt: () => void;
+  onEmail: () => void;
+  onSyncDrive: () => void;
   onOpenSettings: () => void;
 }
 
@@ -262,11 +375,17 @@ function TranscriptionView({
   copied,
   provider,
   scrollRef,
+  driveConnected,
+  driveSyncing,
+  settings,
   onStart,
   onStop,
   onClear,
   onCopy,
-  onDownload,
+  onDownloadMd,
+  onDownloadTxt,
+  onEmail,
+  onSyncDrive,
   onOpenSettings,
 }: TranscriptionViewProps) {
   const hasContent = segments.length > 0;
@@ -371,7 +490,7 @@ function TranscriptionView({
       <div className="border-t border-[#252525] shrink-0 safe-bottom">
         {/* Action buttons */}
         {hasContent && !isRecording && (
-          <div className="flex items-center justify-center gap-2 px-4 pt-3 pb-1">
+          <div className="flex items-center justify-center gap-2 px-4 pt-3 pb-1 flex-wrap">
             <button
               onClick={onCopy}
               className="flex items-center gap-1.5 px-3 py-2 text-xs bg-[#1a1a1a] hover:bg-[#252525] rounded-lg transition-colors border border-[#252525]"
@@ -379,11 +498,34 @@ function TranscriptionView({
               {copied ? '✓ Copied' : '📋 Copy'}
             </button>
             <button
-              onClick={onDownload}
+              onClick={onDownloadMd}
               className="flex items-center gap-1.5 px-3 py-2 text-xs bg-[#1a1a1a] hover:bg-[#252525] rounded-lg transition-colors border border-[#252525]"
             >
-              💾 Download
+              📝 .md
             </button>
+            <button
+              onClick={onDownloadTxt}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs bg-[#1a1a1a] hover:bg-[#252525] rounded-lg transition-colors border border-[#252525]"
+            >
+              📄 .txt
+            </button>
+            {settings.emailEnabled && settings.emailAddress && (
+              <button
+                onClick={onEmail}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs bg-[#1a1a1a] hover:bg-[#252525] rounded-lg transition-colors border border-[#252525]"
+              >
+                ✉️ Email
+              </button>
+            )}
+            {driveConnected && (
+              <button
+                onClick={onSyncDrive}
+                disabled={driveSyncing}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs bg-[#1a1a1a] hover:bg-[#252525] rounded-lg transition-colors border border-[#252525] disabled:opacity-50"
+              >
+                {driveSyncing ? '⏳ Syncing...' : '☁️ Drive'}
+              </button>
+            )}
             <button
               onClick={onClear}
               className="flex items-center gap-1.5 px-3 py-2 text-xs bg-[#1a1a1a] hover:bg-[#252525] rounded-lg transition-colors border border-[#252525]"
@@ -633,6 +775,91 @@ function SettingsView({ settings, onUpdate, onBack }: SettingsViewProps) {
           <p className="text-xs text-[#555] mt-2">
             Text is checkpointed at this interval. Use Download to save your notes.
           </p>
+        </section>
+
+        {/* Email Settings */}
+        <section>
+          <h2 className="text-[11px] font-semibold text-[#666] uppercase tracking-widest mb-3">
+            Email Notes
+          </h2>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.emailEnabled}
+                onChange={(e) => onUpdate({ emailEnabled: e.target.checked })}
+                className="w-4 h-4 rounded border-[#252525] bg-[#1a1a1a] text-[#6366f1] focus:ring-[#6366f1]"
+              />
+              <span className="text-sm text-[#ccc]">Enable email export</span>
+            </label>
+
+            {settings.emailEnabled && (
+              <div>
+                <label className="text-xs text-[#888] mb-1.5 block font-medium">Email Address</label>
+                <input
+                  type="email"
+                  value={settings.emailAddress}
+                  onChange={(e) => onUpdate({ emailAddress: e.target.value })}
+                  placeholder="your@email.com"
+                  className="w-full p-3.5 bg-[#141414] border border-[#222] rounded-xl text-sm text-[#f5f5f5] focus:border-[#6366f1] focus:outline-none placeholder:text-[#444]"
+                />
+                <p className="text-xs text-[#555] mt-2">
+                  Notes will be sent as markdown attachments to this email address.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Google Drive Settings */}
+        <section>
+          <h2 className="text-[11px] font-semibold text-[#666] uppercase tracking-widest mb-3">
+            Google Drive Backup
+          </h2>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.googleDriveEnabled}
+                onChange={(e) => onUpdate({ googleDriveEnabled: e.target.checked })}
+                className="w-4 h-4 rounded border-[#252525] bg-[#1a1a1a] text-[#6366f1] focus:ring-[#6366f1]"
+              />
+              <span className="text-sm text-[#ccc]">Enable Google Drive sync</span>
+            </label>
+
+            {settings.googleDriveEnabled && (
+              <>
+                <div>
+                  <label className="text-xs text-[#888] mb-1.5 block font-medium">
+                    Google Drive Folder ID (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.googleDriveFolderId}
+                    onChange={(e) => onUpdate({ googleDriveFolderId: e.target.value })}
+                    placeholder="Leave empty for root folder"
+                    className="w-full p-3.5 bg-[#141414] border border-[#222] rounded-xl text-sm text-[#f5f5f5] focus:border-[#6366f1] focus:outline-none placeholder:text-[#444] font-mono text-xs"
+                  />
+                  <p className="text-xs text-[#555] mt-2">
+                    Find folder ID in the URL: drive.google.com/drive/folders/<span className="text-[#6366f1]">THIS_PART</span>
+                  </p>
+                </div>
+
+                <div className="p-3 bg-[#141414] border border-[#222] rounded-xl">
+                  <p className="text-xs text-[#666] leading-relaxed">
+                    <strong className="text-[#888]">Setup Required:</strong> To enable Google Drive sync, you need to:
+                  </p>
+                  <ol className="text-xs text-[#555] mt-2 space-y-1 list-decimal list-inside leading-relaxed">
+                    <li>Create a Google Cloud Project</li>
+                    <li>Enable Google Drive API</li>
+                    <li>Create OAuth 2.0 credentials</li>
+                    <li>Add your domain to authorized origins</li>
+                    <li>Update the CLIENT_ID in the app code</li>
+                  </ol>
+                </div>
+              </>
+            )}
+          </div>
         </section>
 
         {/* Tips */}
