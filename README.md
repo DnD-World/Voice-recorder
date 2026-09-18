@@ -1,197 +1,344 @@
-# Φωνή (Foni) - Greek Voice Notes
+# 🎤 Φωνή (Foni) - Greek Voice Notes
 
-Live Greek speech transcription app with multiple AI engines, Google Drive backup, and email export.
+Live Greek speech transcription with auto-save, Docker support, and multiple export options.
 
-## Features
+## ✨ What You Get
 
-- **Live Transcription**: Real-time Greek speech to text
-- **Multiple AI Engines**:
-  - Gemini 3.5 Transcribe Live (best quality)
-  - Whisper Large V3 via Groq (fast, accurate)
-  - Voxtral Mini Realtime via Mistral (low latency)
-  - Browser Speech Recognition (offline, no API key)
-- **Export Options**:
-  - Download as Markdown (.md)
-  - Download as Text (.txt)
-  - Copy to clipboard
-  - Email notes
-  - Google Drive backup
-- **Cross-Platform**:
-  - Web app (any browser)
-  - PWA (installable on Android/iOS)
-  - Desktop executable (Windows/Mac/Linux)
+### Core Features
+- **Live transcription** in Greek (and other languages)
+- **4 AI engines**: Gemini, Groq, Mistral, Browser
+- **Auto-save** every minute to local files
+- **Multiple export**: .md, .txt, clipboard, email
+- **Cross-platform**: Web, Desktop, Mobile (via Tailscale)
 
-## Quick Start
+### Save Locations
+| Method | Where | When | Setup |
+|--------|-------|------|-------|
+| **Local Auto-Save** | `./autosave/` | Every minute | None ✅ |
+| **Manual Download** | Downloads folder | On click | None ✅ |
+| **Email** | Your inbox | On click | Email address |
+| **Google Drive** | Your Drive | Every minute | OAuth setup |
 
-### Web App
-1. Open `dist/index.html` in your browser, or
-2. Deploy to any static hosting (Netlify, Vercel, GitHub Pages)
+**Bottom line:** Notes auto-save to `./autosave/` folder. No setup needed!
 
-### Android (PWA)
-1. Open the app in Chrome on your Android phone
-2. Tap the menu (⋮) → "Add to Home screen"
-3. The app will install as a standalone app
+---
 
-### Desktop Executable
+## 🚀 Quick Start
 
-#### Option 1: Nativefier (Easiest)
-```bash
-# Install Nativefier
-npm install -g nativefier
-
-# Create Windows executable
-nativefier --name "Φωνή" --platform windows --arch x64 \
-  --icon icon-512.png \
-  --single-instance \
-  "file:///path/to/dist/index.html" \
-  --out ./desktop-app
-
-# Or for Mac
-nativefier --name "Φωνή" --platform mac --arch x64 \
-  --icon icon-512.png \
-  --single-instance \
-  "file:///path/to/dist/index.html" \
-  --out ./desktop-app
-
-# Or for Linux
-nativefier --name "Φωνή" --platform linux --arch x64 \
-  --icon icon-512.png \
-  --single-instance \
-  "file:///path/to/dist/index.html" \
-  --out ./desktop-app
-```
-
-#### Option 2: Electron Packager
-```bash
-# Install electron-packager
-npm install -g electron-packager
-
-# Package for Windows
-electron-packager . φωνή --platform=win32 --arch=x64 --out=dist-desktop
-
-# Package for Mac
-electron-packager . φωνή --platform=darwin --arch=x64 --out=dist-desktop
-
-# Package for Linux
-electron-packager . φωνή --platform=linux --arch=x64 --out=dist-desktop
-```
-
-#### Option 3: Tauri (Smallest executable)
-```bash
-# Install Tauri CLI
-cargo install tauri-cli
-
-# Build (requires Rust)
-tauri build
-```
-
-## Setup
-
-### 1. Transcription Engine
-Choose your preferred engine in Settings:
-
-- **Gemini** (Recommended for Greek): Get API key at https://aistudio.google.com/apikey
-- **Groq**: Get API key at https://console.groq.com/keys
-- **Mistral**: Get API key at https://console.mistral.ai/api-keys/
-- **Browser**: No API key needed (variable quality)
-
-### 2. Email Export (Optional)
-1. Enable "Email Notes" in Settings
-2. Enter your email address
-3. Use the ✉️ Email button to send notes
-
-### 3. Google Drive Backup (Optional)
-To enable Google Drive sync:
-
-1. Go to Google Cloud Console: https://console.cloud.google.com/
-2. Create a new project
-3. Enable "Google Drive API"
-4. Go to "Credentials" → Create "OAuth 2.0 Client ID"
-5. Application type: "Web application"
-6. Add authorized JavaScript origins:
-   - `http://localhost:3000` (for development)
-   - Your deployed domain (e.g., `https://yourapp.com`)
-7. Copy the Client ID
-8. Update `src/App.tsx` line ~220:
-   ```typescript
-   const CLIENT_ID = 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
-   ```
-9. Rebuild the app
-10. In Settings, enable "Google Drive sync"
-11. Optionally add a folder ID to save to a specific folder
-
-### 4. Language
-Default is Greek (el-GR). Change in Settings if needed.
-
-## Development
+### Option 1: Run Directly (Recommended)
 
 ```bash
-# Install dependencies
+# Install dependencies (first time only)
 npm install
 
-# Run dev server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
+# Start the app
+node start.js
 ```
 
-## File Structure
+Then open: **http://localhost:99599**
 
-```
-src/
-├── App.tsx                 # Main app component
-├── types.ts               # TypeScript types
-├── utils.ts               # Utility functions
-├── services/
-│   ├── audioCapture.ts    # Microphone audio capture
-│   ├── transcription/     # Transcription providers
-│   │   ├── gemini.ts
-│   │   ├── groq.ts
-│   │   ├── voxtral.ts
-│   │   └── browser.ts
-│   ├── googleDrive.ts     # Google Drive integration
-│   ├── email.ts           # Email export
-│   └── fileExport.ts      # File download/export
-public/
-├── manifest.json          # PWA manifest
-└── sw.js                  # Service worker
+### Option 2: Use Docker
+
+```bash
+# Build and start
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
 ```
 
-## Tips for Greek Transcription
+Then open: **http://localhost:99599**
 
-- **Gemini Transcribe Live** has the best Greek support
-- Use "Smart" mode to clean up filler words
-- Speak clearly at a moderate pace
-- Use auto-save checkpoints (every 1-2 min recommended)
-- Download as .md for formatted notes with timestamps
+### Option 3: Desktop Executable
 
-## Troubleshooting
+**Windows:**
+```cmd
+build-desktop-windows.bat
+```
 
-### Microphone not working
+**Mac/Linux:**
+```bash
+chmod +x build-desktop-mac.sh
+./build-desktop-mac.sh
+```
+
+---
+
+## 📱 Access from Phone (via Tailscale)
+
+1. Start the app on your computer
+2. Find your Tailscale IP: `tailscale ip -4`
+3. Open on phone: `http://YOUR-TAILSCALE-IP:99599`
+
+Example: `http://100.64.1.23:99599`
+
+---
+
+## 🔄 Auto-Start on Login
+
+### Windows
+```cmd
+setup-autostart-windows.bat
+```
+
+### Mac
+```bash
+chmod +x setup-autostart-mac.sh
+./setup-autostart-mac.sh
+```
+
+### Linux
+```bash
+chmod +x setup-autostart-linux.sh
+./setup-autostart-linux.sh
+```
+
+---
+
+## 📁 Where Notes Are Saved
+
+### 1. Local Auto-Save (Always Active)
+**Location:** `./autosave/` folder
+
+Files are saved every minute with timestamps:
+```
+autosave/
+├── voice-notes-2026-01-15T14-30.md
+├── voice-notes-2026-01-15T14-32.md
+└── voice-notes-2026-01-15T14-34.md
+```
+
+### 2. Manual Download
+Click "📝 .md" or "📄 .txt" button → saves to Downloads folder
+
+### 3. Email
+Click "✉️ Email" → sends to your configured email address
+
+### 4. Google Drive (Optional)
+Requires OAuth setup → auto-syncs to your Google Drive
+
+**See [WHERE-NOTES-SAVE.md](WHERE-NOTES-SAVE.md) for details**
+
+---
+
+## 🐳 Docker Setup
+
+### Quick Start
+```bash
+docker-compose up -d
+```
+
+### What's Included
+- **Container name:** `foni-voice-notes`
+- **Port:** 99599
+- **Volumes:**
+  - `./notes/` → Auto-saved notes
+  - `./settings/` → App settings
+
+### Commands
+```bash
+# Start
+docker-compose up -d
+
+# Stop
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Rebuild
+docker-compose down && docker-compose build && docker-compose up -d
+```
+
+**See [DOCKER-SETUP.md](DOCKER-SETUP.md) for details**
+
+---
+
+## 🎯 Setup Guide
+
+### 1. Choose Transcription Engine
+
+**Recommended for Greek: Gemini 3.5 Transcribe Live**
+
+| Engine | Get API Key | Quality | Cost |
+|--------|-------------|---------|------|
+| **Gemini** | https://aistudio.google.com/apikey | ⭐⭐⭐⭐⭐ | Free tier |
+| **Groq** | https://console.groq.com/keys | ⭐⭐⭐⭐ | Free tier |
+| **Mistral** | https://console.mistral.ai/api-keys/ | ⭐⭐⭐⭐ | Free tier |
+| **Browser** | N/A | ⭐⭐⭐ | Free |
+
+### 2. Configure in App
+
+1. Open Settings (gear icon)
+2. Select your engine
+3. Paste your API key
+4. Choose language (default: Greek)
+5. Set checkpoint interval (default: 1 minute)
+
+### 3. Optional: Email Export
+
+1. Enable "Email Notes" in Settings
+2. Enter your email address
+3. Use "✉️ Email" button to send notes
+
+### 4. Optional: Google Drive
+
+1. Create Google Cloud Project
+2. Enable Drive API
+3. Create OAuth credentials
+4. Update Client ID in code
+5. Enable "Google Drive sync" in Settings
+
+**See [SETUP-GUIDE.md](SETUP-GUIDE.md) for detailed instructions**
+
+---
+
+## 📂 File Structure
+
+```
+foni/
+├── start.js                    # Universal launcher
+├── start-windows.bat           # Windows launcher
+├── start-mac-linux.sh          # Mac/Linux launcher
+├── server.js                   # HTTP server (port 99599)
+├── Dockerfile                  # Docker config
+├── docker-compose.yml          # Docker Compose config
+├── setup-autostart-*.bat/sh    # Auto-start setup scripts
+├── build-desktop-*.bat/sh      # Desktop executable builders
+├── autosave/                   # Auto-saved notes (created automatically)
+├── dist/                       # Built web app
+├── src/                        # Source code
+│   ├── App.tsx                 # Main app
+│   ├── services/               # API integrations
+│   │   ├── transcription/      # AI engines
+│   │   ├── googleDrive.ts      # Google Drive
+│   │   ├── email.ts            # Email export
+│   │   └── fileExport.ts       # File downloads
+│   └── ...
+└── docs/
+    ├── README.md               # This file
+    ├── QUICKSTART.md           # Quick start guide
+    ├── SETUP-GUIDE.md          # Detailed setup
+    ├── DOCKER-SETUP.md         # Docker guide
+    └── WHERE-NOTES-SAVE.md     # Save locations
+```
+
+---
+
+## 🔧 Commands Reference
+
+### Start/Stop
+```bash
+# Start app
+node start.js
+
+# Or use platform-specific launcher
+./start-windows.bat      # Windows
+./start-mac-linux.sh     # Mac/Linux
+
+# Stop
+# Press Ctrl+C
+```
+
+### Docker
+```bash
+docker-compose up -d     # Start
+docker-compose down      # Stop
+docker-compose logs -f   # View logs
+```
+
+### Build
+```bash
+npm install              # Install dependencies
+npm run build            # Build web app
+npm run dev              # Development mode
+```
+
+### Auto-Start Setup
+```bash
+./setup-autostart-windows.bat   # Windows
+./setup-autostart-mac.sh        # Mac
+./setup-autostart-linux.sh      # Linux
+```
+
+### Desktop Executable
+```bash
+./build-desktop-windows.bat     # Windows
+./build-desktop-mac.sh          # Mac
+./build-desktop-linux.sh        # Linux
+```
+
+---
+
+## 💡 Tips for Greek Transcription
+
+1. **Use Gemini** - best quality for Greek
+2. **Enable Smart mode** - removes filler words
+3. **Speak clearly** at moderate pace
+4. **Set checkpoint to 1-2 min** - good balance
+5. **Check `autosave/` folder** - your notes are there!
+
+---
+
+## 🐛 Troubleshooting
+
+### Microphone Not Working
 - Check browser permissions
-- Try Chrome or Edge (best support)
-- Ensure HTTPS (required for microphone on most browsers)
+- Use Chrome or Edge
+- Must be HTTPS (except localhost)
 
-### Transcription quality issues
-- Try a different engine
-- Check language setting matches your speech
-- Speak closer to microphone
-- Reduce background noise
+### Notes Not Saving
+- Check `autosave/` folder exists
+- Check server logs
+- Verify disk space
 
-### Google Drive sync not working
-- Verify OAuth Client ID is correct
-- Check authorized origins include your domain
-- Ensure Google Drive API is enabled
-- Try signing out and back in
+### Can't Access from Phone
+- Make sure Tailscale is running
+- Check firewall allows port 99599
+- Verify Tailscale IP is correct
 
-## License
+### Docker Issues
+- Check Docker Desktop is running
+- Verify port 99599 is free
+- Check container logs: `docker-compose logs`
 
-MIT
+---
 
-## Support
+## 📚 Documentation
 
-For issues or questions, please open an issue on GitHub.
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide
+- **[SETUP-GUIDE.md](SETUP-GUIDE.md)** - Detailed setup instructions
+- **[DOCKER-SETUP.md](DOCKER-SETUP.md)** - Docker guide
+- **[WHERE-NOTES-SAVE.md](WHERE-NOTES-SAVE.md)** - Where notes are saved
+
+---
+
+## 🎓 Summary
+
+**What you have:**
+- ✅ Live Greek transcription app
+- ✅ Auto-saves to `./autosave/` every minute
+- ✅ Works on web, desktop, and mobile (via Tailscale)
+- ✅ Docker support
+- ✅ Auto-start on login
+- ✅ Multiple export options (.md, .txt, email, clipboard)
+- ✅ Optional Google Drive sync (requires setup)
+
+**To start:**
+```bash
+node start.js
+```
+
+**To access:**
+- Computer: http://localhost:99599
+- Phone: http://YOUR-TAILSCALE-IP:99599
+
+**Notes are saved to:**
+- `./autosave/` folder (automatic)
+- Downloads folder (manual download)
+- Your email (manual send)
+- Google Drive (if configured)
+
+---
+
+Καλή επιτυχία! (Good luck!)

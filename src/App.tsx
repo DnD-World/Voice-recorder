@@ -139,8 +139,27 @@ function App() {
       // Start auto-save timer
       if (settings.autoSaveInterval > 0) {
         saveTimerRef.current = setInterval(() => {
+          // Auto-save to local server
+          if (fullTextRef.current.trim()) {
+            const content = toMarkdown(segments, 'Voice Notes');
+            
+            // Save to local server
+            fetch('/api/autosave', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content, format: 'markdown' })
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                console.log(`💾 Auto-saved: ${data.filename}`);
+              }
+            })
+            .catch(err => console.error('Auto-save error:', err));
+          }
+          
+          // Sync to Google Drive if enabled
           if (driveConnected && fullTextRef.current.trim()) {
-            // Sync to Google Drive
             const content = toMarkdown(segments, 'Voice Notes');
             const filename = `voice-notes-${new Date().toISOString().slice(0, 10)}.md`;
             
