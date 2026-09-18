@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  foni:
+    build: .
+    container_name: foni-voice-notes
+    ports:
+      - "99599:99599"
+    volumes:
+      # Mount a local folder for auto-saved notes
+      - ./notes:/app/notes
+      # Mount settings so they persist
+      - ./settings:/app/settings
+    environment:
+      - NODE_ENV=production
+      - PORT=99599
+      - AUTO_SAVE_PATH=/app/notes
+    restart: unless-stopped
+    networks:
+      - foni-network
+
+networks:
+  foni-network:
+    driver: bridge
