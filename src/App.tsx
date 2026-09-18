@@ -250,17 +250,20 @@ function App() {
 
   // Google Drive functions
   const connectGoogleDrive = useCallback(async () => {
+    if (!settings.googleOAuthClientId) {
+      setError('Please add your Google OAuth Client ID in Settings');
+      return;
+    }
+    
     try {
       await loadGoogleApi();
-      // You'll need to replace this with your actual Google OAuth Client ID
-      const CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
-      initTokenClient(CLIENT_ID);
+      initTokenClient(settings.googleOAuthClientId);
       await authenticateDrive();
       setDriveConnected(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect to Google Drive');
     }
-  }, []);
+  }, [settings.googleOAuthClientId]);
 
   const disconnectGoogleDrive = useCallback(() => {
     signOutDrive();
@@ -850,6 +853,22 @@ function SettingsView({ settings, onUpdate, onBack }: SettingsViewProps) {
               <>
                 <div>
                   <label className="text-xs text-[#888] mb-1.5 block font-medium">
+                    Google OAuth Client ID
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.googleOAuthClientId}
+                    onChange={(e) => onUpdate({ googleOAuthClientId: e.target.value })}
+                    placeholder="xxxxx.apps.googleusercontent.com"
+                    className="w-full p-3.5 bg-[#141414] border border-[#222] rounded-xl text-sm text-[#f5f5f5] focus:border-[#6366f1] focus:outline-none placeholder:text-[#444] font-mono text-xs"
+                  />
+                  <p className="text-xs text-[#555] mt-2">
+                    Get this from Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-xs text-[#888] mb-1.5 block font-medium">
                     Google Drive Folder ID (optional)
                   </label>
                   <input
@@ -871,10 +890,15 @@ function SettingsView({ settings, onUpdate, onBack }: SettingsViewProps) {
                   <ol className="text-xs text-[#555] mt-2 space-y-1 list-decimal list-inside leading-relaxed">
                     <li>Create a Google Cloud Project</li>
                     <li>Enable Google Drive API</li>
-                    <li>Create OAuth 2.0 credentials</li>
-                    <li>Add your domain to authorized origins</li>
-                    <li>Update the CLIENT_ID in the app code</li>
+                    <li>Create OAuth 2.0 credentials (Web application)</li>
+                    <li>Add your domain to authorized JavaScript origins</li>
+                    <li>Paste the Client ID above</li>
                   </ol>
+                  <p className="text-xs text-[#555] mt-2">
+                    <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-[#6366f1] hover:underline">
+                      Open Google Cloud Console →
+                    </a>
+                  </p>
                 </div>
               </>
             )}

@@ -10,6 +10,7 @@ export interface AppSettings {
   googleDocsId: string;
   googleDriveEnabled: boolean;
   googleDriveFolderId: string;
+  googleOAuthClientId: string;
   emailEnabled: boolean;
   emailAddress: string;
   autoSaveInterval: number; // seconds
@@ -44,6 +45,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   googleDocsId: '',
   googleDriveEnabled: false,
   googleDriveFolderId: '',
+  googleOAuthClientId: '',
   emailEnabled: false,
   emailAddress: '',
   autoSaveInterval: 60,
