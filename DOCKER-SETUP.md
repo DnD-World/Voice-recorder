@@ -17,8 +17,8 @@ docker-compose logs -f
 
 ### 2. Access the App
 
-- **Local:** http://localhost:99599
-- **From phone (Tailscale):** http://YOUR-TAILSCALE-IP:99599
+- **Local:** http://localhost:9959
+- **From phone (Tailscale):** http://YOUR-TAILSCALE-IP:9959
 
 ### 3. Stop the App
 

@@ -102,7 +102,7 @@ services:
     container_name: foni-voice-notes
     working_dir: /app
     ports:
-      - "99599:99599"
+      - "9959:9959"
     volumes:
       - ./notes:/app/notes
       - ./settings:/app/settings
@@ -110,7 +110,7 @@ services:
       - ./server.js:/app/server.js
     environment:
       - NODE_ENV=production
-      - PORT=99599
+      - PORT=9959
     command: node server.js
     restart: unless-stopped
     networks:
@@ -134,10 +134,10 @@ echo "Starting Φωνή..."
 docker compose up -d
 echo ""
 echo "✅ App started!"
-echo "   Local: http://localhost:99599"
+echo "   Local: http://localhost:9959"
 TAILSCALE_IP=$(tailscale ip -4 2>/dev/null)
 if [ -n "$TAILSCALE_IP" ]; then
-    echo "   Tailscale: http://$TAILSCALE_IP:99599"
+    echo "   Tailscale: http://$TAILSCALE_IP:9959"
 fi
 EOF
 chmod +x "$APP_DIR/start.sh"
@@ -182,10 +182,10 @@ echo ""
 docker compose ps
 echo ""
 echo "Access URLs:"
-echo "  Local:     http://localhost:99599"
+echo "  Local:     http://localhost:9959"
 TAILSCALE_IP=$(tailscale ip -4 2>/dev/null)
 if [ -n "$TAILSCALE_IP" ]; then
-    echo "  Tailscale: http://$TAILSCALE_IP:99599"
+    echo "  Tailscale: http://$TAILSCALE_IP:9959"
 fi
 echo ""
 echo "Notes saved to: $(pwd)/notes/"
@@ -263,8 +263,8 @@ cat > "$APP_DIR/README.md" << EOF
 
 ## Access
 
-- Local: http://localhost:99599
-- Tailscale: http://YOUR-TAILSCALE-IP:99599
+- Local: http://localhost:9959
+- Tailscale: http://YOUR-TAILSCALE-IP:9959
 
 ## Notes Location
 
@@ -304,7 +304,7 @@ echo "  3. Enable Tailscale (if installed):"
 echo "     sudo tailscale up"
 echo ""
 echo "  4. Access from your phone:"
-echo "     http://YOUR-TAILSCALE-IP:99599"
+echo "     http://YOUR-TAILSCALE-IP:9959"
 echo ""
 echo "The app will auto-start on every boot!"
 echo ""

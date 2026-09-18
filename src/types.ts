@@ -54,18 +54,18 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export const PROVIDER_INFO: Record<TranscriptionProvider, { name: string; description: string; needsKey: boolean }> = {
   gemini: {
-    name: 'Gemini 3.5 Transcribe Live',
+    name: 'Gemini 2.0 Flash Live',
     description: 'Google\'s real-time transcription. Excellent for Greek. WebSocket streaming.',
     needsKey: true,
   },
   groq: {
     name: 'Whisper Large V3 (Groq)',
-    description: 'Fast multilingual transcription via Groq API. Good Greek support.',
+    description: 'Near-real-time transcription via Groq API. Good Greek support. ~3s chunks.',
     needsKey: true,
   },
   voxtral: {
     name: 'Voxtral Mini Realtime',
-    description: 'Mistral\'s realtime transcription. Sub-200ms latency. Supports 13 languages.',
+    description: 'Mistral\'s near-real-time transcription. Sub-200ms latency. Supports 13 languages.',
     needsKey: true,
   },
   browser: {

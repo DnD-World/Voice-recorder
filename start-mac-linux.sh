@@ -15,7 +15,7 @@ echo -e "${BLUE}╔════════════════════�
 echo -e "${BLUE}║                                                        ║${NC}"
 echo -e "${BLUE}║   🎤  Φωνή (Foni) - Greek Voice Notes                 ║${NC}"
 echo -e "${BLUE}║                                                        ║${NC}"
-echo -e "${BLUE}║   Starting server on port 99599...                    ║${NC}"
+echo -e "${BLUE}║   Starting server on port 9959...                     ║${NC}"
 echo -e "${BLUE}║                                                        ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
@@ -58,13 +58,13 @@ echo -e "${BLUE}🌐 Server starting...${NC}"
 echo ""
 echo -e "${BLUE}══════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "  ${GREEN}Local access:${NC}    http://localhost:99599"
+echo -e "  ${GREEN}Local access:${NC}    http://localhost:9959"
 
 if [ -n "$TAILSCALE_IP" ]; then
-    echo -e "  ${GREEN}Tailscale:${NC}       http://$TAILSCALE_IP:99599"
+    echo -e "  ${GREEN}Tailscale:${NC}       http://$TAILSCALE_IP:9959"
     echo ""
     echo -e "  ${YELLOW}📱 From your phone:${NC}"
-    echo -e "     Open http://$TAILSCALE_IP:99599"
+    echo -e "     Open http://$TAILSCALE_IP:9959"
 fi
 
 echo ""

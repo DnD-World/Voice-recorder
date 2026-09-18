@@ -25,16 +25,19 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server.js ./server.js
 COPY --from=builder /app/package.json ./package.json
 
+# Create autosave directory
+RUN mkdir -p /app/autosave
+
 # Expose the port
-EXPOSE 99599
+EXPOSE 9959
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=99599
+ENV PORT=9959
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:99599/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:9959/ || exit 1
 
 # Start the server
 CMD ["node", "server.js"]

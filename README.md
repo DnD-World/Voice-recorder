@@ -35,7 +35,7 @@ npm install
 node start.js
 ```
 
-Then open: **http://localhost:99599**
+Then open: **http://localhost:9959**
 
 ### Option 2: Use Docker
 
@@ -68,9 +68,9 @@ chmod +x build-desktop-mac.sh
 
 1. Start the app on your computer
 2. Find your Tailscale IP: `tailscale ip -4`
-3. Open on phone: `http://YOUR-TAILSCALE-IP:99599`
+3. Open on phone: `http://YOUR-TAILSCALE-IP:9959`
 
-Example: `http://100.64.1.23:99599`
+Example: `http://100.64.1.23:9959`
 
 ---
 
@@ -130,7 +130,7 @@ docker-compose up -d
 
 ### What's Included
 - **Container name:** `foni-voice-notes`
-- **Port:** 99599
+- **Port:** 9959
 - **Volumes:**
   - `./notes/` → Auto-saved notes
   - `./settings/` → App settings
@@ -200,7 +200,7 @@ foni/
 ├── start.js                    # Universal launcher
 ├── start-windows.bat           # Windows launcher
 ├── start-mac-linux.sh          # Mac/Linux launcher
-├── server.js                   # HTTP server (port 99599)
+├── server.js                   # HTTP server (port 9959)
 ├── Dockerfile                  # Docker config
 ├── docker-compose.yml          # Docker Compose config
 ├── setup-autostart-*.bat/sh    # Auto-start setup scripts
@@ -294,12 +294,12 @@ npm run dev              # Development mode
 
 ### Can't Access from Phone
 - Make sure Tailscale is running
-- Check firewall allows port 99599
+- Check firewall allows port 9959
 - Verify Tailscale IP is correct
 
 ### Docker Issues
 - Check Docker Desktop is running
-- Verify port 99599 is free
+- Verify port 9959 is free
 - Check container logs: `docker-compose logs`
 
 ---

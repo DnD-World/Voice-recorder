@@ -7,7 +7,7 @@ echo ╔════════════════════════
 echo ║                                                        ║
 echo ║   🎤  Φωνή (Foni) - Greek Voice Notes                 ║
 echo ║                                                        ║
-echo ║   Starting server on port 99599...                    ║
+echo ║   Starting server on port 9959...                     ║
 echo ║                                                        ║
 echo ╚════════════════════════════════════════════════════════╝
 echo.
@@ -53,12 +53,12 @@ echo 🌐 Server starting...
 echo.
 echo ══════════════════════════════════════════════════════════
 echo.
-echo   Local access:    http://localhost:99599
+echo   Local access:    http://localhost:9959
 if defined TAILSCALE_IP (
-echo   Tailscale:       http://%TAILSCALE_IP%:99599
+echo   Tailscale:       http://%TAILSCALE_IP%:9959
 echo.
 echo   📱 From your phone:
-echo      Open http://%TAILSCALE_IP%:99599
+echo      Open http://%TAILSCALE_IP%:9959
 )
 echo.
 echo ══════════════════════════════════════════════════════════

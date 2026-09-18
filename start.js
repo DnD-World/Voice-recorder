@@ -18,7 +18,7 @@ console.log('╔═════════════════════�
 console.log('║                                                        ║');
 console.log('║   🎤  Φωνή (Foni) - Greek Voice Notes                 ║');
 console.log('║                                                        ║');
-console.log('║   Starting server on port 99599...                    ║');
+console.log('║   Starting server on port 9959...                     ║');
 console.log('║                                                        ║');
 console.log('╚════════════════════════════════════════════════════════╝');
 console.log('');
@@ -69,13 +69,13 @@ console.log('🌐 Server starting...');
 console.log('');
 console.log('══════════════════════════════════════════════════════════');
 console.log('');
-console.log(`  Local access:    http://localhost:99599`);
+console.log(`  Local access:    http://localhost:9959`);
 
 if (tailscaleIP) {
-    console.log(`  Tailscale:       http://${tailscaleIP}:99599`);
+    console.log(`  Tailscale:       http://${tailscaleIP}:9959`);
     console.log('');
     console.log('  📱 From your phone:');
-    console.log(`     Open http://${tailscaleIP}:99599`);
+    console.log(`     Open http://${tailscaleIP}:9959`);
 }
 
 console.log('');
