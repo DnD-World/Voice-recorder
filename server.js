@@ -2,11 +2,12 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 99599;
-const HOST = '0.0.0.0'; // Listen on all interfaces (Tailscale accessible)
+const PORT = 9959;
+const HOST = '0.0.0.0';
 
-// Auto-save directory
+// Auto-save directory - single file per session
 const AUTO_SAVE_DIR = path.join(__dirname, 'autosave');
+const MAX_REQUEST_SIZE = 10 * 1024 * 1024; // 10MB limit
 
 // Create autosave directory if it doesn't exist
 if (!fs.existsSync(AUTO_SAVE_DIR)) {
@@ -38,23 +39,36 @@ const server = http.createServer((req, res) => {
   // Handle auto-save API endpoint
   if (req.url === '/api/autosave' && req.method === 'POST') {
     let body = '';
+    let bodySize = 0;
+    
     req.on('data', chunk => {
+      bodySize += chunk.length;
+      if (bodySize > MAX_REQUEST_SIZE) {
+        res.writeHead(413, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Request too large' }));
+        req.destroy();
+        return;
+      }
       body += chunk.toString();
     });
+    
     req.on('end', () => {
+      if (res.writableEnded) return;
+      
       try {
         const data = JSON.parse(body);
-        const { content, format } = data;
+        const { content, format, sessionId } = data;
         
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        // Use session-based filename (one file per recording session)
+        const session = sessionId || 'current';
         const extension = format === 'markdown' ? 'md' : 'txt';
-        const filename = `voice-notes-${timestamp}.${extension}`;
+        const filename = `voice-notes-${session}.${extension}`;
         const filepath = path.join(AUTO_SAVE_DIR, filename);
         
         fs.writeFileSync(filepath, content, 'utf8');
         
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, filename, path: filepath }));
+        res.end(JSON.stringify({ success: true, filename }));
         console.log(`💾 Auto-saved: ${filename}`);
       } catch (error) {
         console.error('Auto-save error:', error);
@@ -72,7 +86,6 @@ const server = http.createServer((req, res) => {
         .filter(f => f.endsWith('.md') || f.endsWith('.txt'))
         .map(f => ({
           name: f,
-          path: path.join(AUTO_SAVE_DIR, f),
           size: fs.statSync(path.join(AUTO_SAVE_DIR, f)).size,
           modified: fs.statSync(path.join(AUTO_SAVE_DIR, f)).mtime
         }))

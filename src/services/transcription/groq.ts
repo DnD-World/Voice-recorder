@@ -6,6 +6,9 @@ import { float32To16BitPCM } from '../audioCapture';
  * Groq Whisper Large V3 provider
  * Uses REST API with audio chunks for near-real-time transcription
  * Sends audio every ~3 seconds for a good balance of latency and accuracy
+ * 
+ * NOTE: This is NOT true live streaming - it sends chunks every 3 seconds.
+ * Described as "near-real-time" in the UI.
  */
 export class GroqWhisperProvider implements TranscriptionProviderInterface {
   private running = false;
@@ -13,6 +16,7 @@ export class GroqWhisperProvider implements TranscriptionProviderInterface {
   private audioBuffer: Float32Array[] = [];
   private processingInterval: ReturnType<typeof setInterval> | null = null;
   private settings: AppSettings | null = null;
+  private isProcessing = false; // Prevent overlapping requests
 
   async start(settings: AppSettings, callbacks: TranscriptionCallbacks): Promise<void> {
     this.callbacks = callbacks;
@@ -25,6 +29,7 @@ export class GroqWhisperProvider implements TranscriptionProviderInterface {
 
     this.running = true;
     this.audioBuffer = [];
+    this.isProcessing = false;
     
     // Process audio chunks every 3 seconds
     this.processingInterval = setInterval(() => {
@@ -41,6 +46,9 @@ export class GroqWhisperProvider implements TranscriptionProviderInterface {
 
   private async processBuffer(): Promise<void> {
     if (this.audioBuffer.length === 0 || !this.settings || !this.callbacks) return;
+    if (this.isProcessing) return; // Skip if previous request still in progress
+    
+    this.isProcessing = true;
     
     // Concatenate all buffered chunks
     const totalLength = this.audioBuffer.reduce((sum, chunk) => sum + chunk.length, 0);
@@ -50,7 +58,7 @@ export class GroqWhisperProvider implements TranscriptionProviderInterface {
       combined.set(chunk, offset);
       offset += chunk.length;
     }
-    this.audioBuffer = [];
+    this.audioBuffer = []; // Clear buffer before processing
     
     // Convert to WAV format for the API
     const wavBlob = this.createWavBlob(combined);
@@ -79,12 +87,13 @@ export class GroqWhisperProvider implements TranscriptionProviderInterface {
       const result = await response.json();
       
       if (result.text && result.text.trim()) {
-        // Treat as final since we're sending complete chunks
-        this.callbacks.onFinal(result.text.trim());
+        this.callbacks?.onFinal(result.text.trim());
       }
     } catch (error) {
       console.error('Groq transcription error:', error);
-      this.callbacks.onError(error instanceof Error ? error.message : 'Transcription failed');
+      this.callbacks?.onError(error instanceof Error ? error.message : 'Transcription failed');
+    } finally {
+      this.isProcessing = false;
     }
   }
 
@@ -105,8 +114,8 @@ export class GroqWhisperProvider implements TranscriptionProviderInterface {
     view.setUint32(4, 36 + dataSize, true);
     this.writeString(view, 8, 'WAVE');
     this.writeString(view, 12, 'fmt ');
-    view.setUint32(16, 16, true); // fmt chunk size
-    view.setUint16(20, 1, true); // PCM format
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
     view.setUint16(22, numChannels, true);
     view.setUint32(24, sampleRate, true);
     view.setUint32(28, byteRate, true);

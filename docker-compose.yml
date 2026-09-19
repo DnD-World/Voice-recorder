@@ -5,16 +5,13 @@ services:
     build: .
     container_name: foni-voice-notes
     ports:
-      - "99599:99599"
+      - "9959:9959"
     volumes:
-      # Mount a local folder for auto-saved notes
-      - ./notes:/app/notes
-      # Mount settings so they persist
-      - ./settings:/app/settings
+      # Mount autosave folder for persistent notes
+      - ./autosave:/app/autosave
     environment:
       - NODE_ENV=production
-      - PORT=99599
-      - AUTO_SAVE_PATH=/app/notes
+      - PORT=9959
     restart: unless-stopped
     networks:
       - foni-network

@@ -49,6 +49,8 @@ function App() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const fullTextRef = useRef('');
   const driveFileIdRef = useRef<string | null>(null);
+  const segmentsRef = useRef<TranscriptionSegment[]>([]);
+  const sessionIdRef = useRef<string>(Date.now().toString(36));
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -103,7 +105,11 @@ function App() {
             timestamp: Date.now(),
             isFinal: true,
           };
-          setSegments(prev => [...prev, segment]);
+          setSegments(prev => {
+            const newSegments = [...prev, segment];
+            segmentsRef.current = newSegments; // Keep ref in sync
+            return newSegments;
+          });
           setInterimText('');
           fullTextRef.current += (fullTextRef.current ? ' ' : '') + text;
         },
@@ -125,10 +131,23 @@ function App() {
         const audioCapture = new AudioCapture();
         audioCaptureRef.current = audioCapture;
         
-        await audioCapture.start((chunk) => {
-          provider.sendAudio(chunk);
-        });
+        try {
+          await audioCapture.start((chunk) => {
+            provider.sendAudio(chunk);
+          });
+        } catch (micError) {
+          // Microphone failed - clean up provider
+          console.error('Microphone error:', micError);
+          await provider.stop();
+          providerRef.current = null;
+          setError('Microphone access denied or unavailable. Please check permissions.');
+          setIsConnecting(false);
+          return;
+        }
       }
+
+      // Generate session ID for this recording
+      sessionIdRef.current = Date.now().toString(36);
 
       // Start session timer
       setSessionDuration(0);
@@ -139,15 +158,22 @@ function App() {
       // Start auto-save timer
       if (settings.autoSaveInterval > 0) {
         saveTimerRef.current = setInterval(() => {
+          // Use ref to get latest segments (avoids stale closure)
+          const currentSegments = segmentsRef.current;
+          
           // Auto-save to local server
           if (fullTextRef.current.trim()) {
-            const content = toMarkdown(segments, 'Voice Notes');
+            const content = toMarkdown(currentSegments, 'Voice Notes');
             
-            // Save to local server
+            // Save to local server with session ID (one file per session)
             fetch('/api/autosave', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ content, format: 'markdown' })
+              body: JSON.stringify({ 
+                content, 
+                format: 'markdown',
+                sessionId: sessionIdRef.current 
+              })
             })
             .then(res => res.json())
             .then(data => {
@@ -160,7 +186,7 @@ function App() {
           
           // Sync to Google Drive if enabled
           if (driveConnected && fullTextRef.current.trim()) {
-            const content = toMarkdown(segments, 'Voice Notes');
+            const content = toMarkdown(currentSegments, 'Voice Notes');
             const filename = `voice-notes-${new Date().toISOString().slice(0, 10)}.md`;
             
             if (driveFileIdRef.current) {
@@ -445,9 +471,9 @@ function TranscriptionView({
       {/* Provider indicator */}
       <div className="px-4 py-2 flex items-center justify-between shrink-0">
         <span className="text-[11px] text-[#6366f1] font-medium tracking-wide">
-          {provider === 'gemini' && '◆ Gemini Transcribe Live'}
-          {provider === 'groq' && '◆ Whisper Large V3'}
-          {provider === 'voxtral' && '◆ Voxtral Mini Realtime'}
+          {provider === 'gemini' && '◆ Gemini 2.0 Flash Live'}
+          {provider === 'groq' && '◆ Whisper Large V3 (near-real-time)'}
+          {provider === 'voxtral' && '◆ Voxtral Mini (near-real-time)'}
           {provider === 'browser' && '◆ Browser Recognition'}
         </span>
         {saveStatus === 'saved' && (
@@ -662,8 +688,8 @@ function SettingsView({ settings, onUpdate, onBack }: SettingsViewProps) {
                     </p>
                     <p className="text-xs text-[#666] mt-0.5 leading-relaxed">
                       {p === 'gemini' && 'Best quality for Greek. Real-time WebSocket streaming. Smart mode available.'}
-                      {p === 'groq' && 'Fast multilingual. Sends audio in ~3s chunks. Great accuracy.'}
-                      {p === 'voxtral' && 'Sub-200ms latency. 13 languages. Very responsive.'}
+                      {p === 'groq' && 'Near-real-time. Sends audio in ~3s chunks. Great accuracy.'}
+                      {p === 'voxtral' && 'Near-real-time. Sub-200ms latency. 13 languages. Very responsive.'}
                       {p === 'browser' && 'No API key needed. Works offline. Quality varies for Greek.'}
                     </p>
                   </div>
