@@ -1,7 +1,7 @@
 {
-  "name": "sandbox-workspace",
+  "name": "foni-voice-notes",
+  "version": "1.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
